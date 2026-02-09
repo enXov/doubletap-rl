@@ -10,8 +10,7 @@ categories = ["games"]
 
 [dependencies]
 # Input listening (global mouse events via evdev)
-# unstable_grab feature allows blocking/intercepting input events
-rdev = { version = "0.5", features = ["unstable_grab"] }
+rdev = "0.5"
 
 # Error handling
 thiserror = "2"
