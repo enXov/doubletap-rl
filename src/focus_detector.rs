@@ -7,7 +7,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
-use tracing::info;
+
 
 use crate::DoubleTapError;
 
@@ -215,14 +215,10 @@ pub fn start_focus_poller(
     running: Arc<AtomicBool>,
 ) -> thread::JoinHandle<()> {
     thread::spawn(move || {
-        info!("Focus poller started");
-        
         while running.load(Ordering::SeqCst) {
             let focused = detector.is_target_focused();
             state.set_focused(focused);
             thread::sleep(Duration::from_millis(100));
         }
-        
-        info!("Focus poller stopped");
     })
 }

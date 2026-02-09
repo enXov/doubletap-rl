@@ -6,10 +6,10 @@ use std::sync::mpsc;
 use std::sync::OnceLock;
 use std::thread;
 use std::time::Instant;
-use tracing::{error, info};
+use tracing::error;
 
 /// Minimum time between auto-clicks in milliseconds
-/// This prevents feedback loops from ydotool-generated events
+/// This prevents feedback loops from our own simulated events
 const MIN_CLICK_INTERVAL_MS: u64 = 100;
 
 /// Timestamp of last auto-click we triggered (in millis since program start)
@@ -29,7 +29,6 @@ fn now_ms() -> u64 {
 pub fn mark_auto_click_sent() {
     let now = now_ms();
     LAST_AUTO_CLICK_MS.store(now, Ordering::SeqCst);
-    info!("Marked auto-click at {}ms", now);
 }
 
 /// Check if enough time has passed since last auto-click
@@ -46,7 +45,6 @@ fn should_ignore_event() -> bool {
     let elapsed = now.saturating_sub(last_click);
     
     if elapsed < MIN_CLICK_INTERVAL_MS {
-        info!("Ignoring event ({}ms since last auto-click, need {}ms)", elapsed, MIN_CLICK_INTERVAL_MS);
         return true;
     }
     
@@ -80,8 +78,6 @@ impl InputListener {
     /// Returns a JoinHandle for the listener thread.
     pub fn start(self) -> thread::JoinHandle<()> {
         thread::spawn(move || {
-            info!("Input listener started");
-
             let sender = self.sender;
 
             let callback = move |event: Event| {
@@ -92,9 +88,6 @@ impl InputListener {
                     if should_ignore_event() {
                         return;
                     }
-                    
-                    info!("Right-click release detected");
-
                     let click_event = RightClickEvent {
                         timestamp: std::time::Instant::now(),
                     };

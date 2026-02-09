@@ -22,8 +22,11 @@ tracing-subscriber = "0.3"
 # Ctrl+C handler for graceful shutdown
 ctrlc = "3.4"
 
-# X11 window focus detection + XTest for input simulation
-x11rb = { version = "0.13", features = ["xtest"] }
+# X11 window focus detection (works with XWayland)
+x11rb = "0.13"
 
-# For getting user ID
+# Virtual input device creation via uinput
+evdev = "0.12"
+
+# Raw system calls for uinput writes
 libc = "0.2"
