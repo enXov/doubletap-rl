@@ -27,3 +27,7 @@ tokio = { version = "1", features = ["rt-multi-thread", "sync", "macros"] }
 
 # D-Bus for KDE Wayland focus detection
 zbus = "5"
+
+# Ctrl+C handler for graceful shutdown
+ctrlc = "3.4"
+
