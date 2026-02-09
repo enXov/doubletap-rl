@@ -4,8 +4,9 @@
 //! the user's right-click, helping with double-tap aerial mechanics.
 
 use doubletap_rl::{
+    create_focus_detector,
     input_listener::{create_event_channel, InputListener},
-    Config, DoubleTapError, InputSimulator,
+    start_focus_poller, Config, DoubleTapError, FocusState, InputSimulator,
 };
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -15,7 +16,7 @@ use tracing_subscriber::FmtSubscriber;
 fn main() -> Result<(), DoubleTapError> {
     // Initialize logging
     let _subscriber = FmtSubscriber::builder()
-        .with_max_level(Level::DEBUG)
+        .with_max_level(Level::INFO)
         .with_target(false)
         .compact()
         .init();
@@ -53,6 +54,11 @@ fn main() -> Result<(), DoubleTapError> {
 
     info!("Input simulator ready");
 
+    // Create focus detector
+    let focus_detector = create_focus_detector(&config.target_window)?;
+    let focus_state = Arc::new(FocusState::new());
+    let _focus_handle = start_focus_poller(focus_detector, focus_state.clone(), running.clone());
+
     // Create channel for input events
     let (sender, receiver) = create_event_channel();
 
@@ -68,14 +74,19 @@ fn main() -> Result<(), DoubleTapError> {
         // Try to receive events with a timeout
         match receiver.recv_timeout(std::time::Duration::from_millis(100)) {
             Ok(event) => {
-                info!("Right-click detected! Sending auto-click...");
+                // Check if target window is focused
+                if focus_state.is_focused() {
+                    info!("Right-click detected! Target focused - sending auto-click...");
 
-                // Send the auto-click
-                if let Err(e) = simulator.send_right_click(config.click_delay_ms) {
-                    error!("Failed to send auto-click: {}", e);
+                    // Send the auto-click
+                    if let Err(e) = simulator.send_right_click(config.click_delay_ms) {
+                        error!("Failed to send auto-click: {}", e);
+                    } else {
+                        let elapsed = event.timestamp.elapsed();
+                        info!("Auto-click sent (latency: {:?})", elapsed);
+                    }
                 } else {
-                    let elapsed = event.timestamp.elapsed();
-                    info!("Auto-click sent (latency: {:?})", elapsed);
+                    info!("Right-click detected, but target not focused - ignoring");
                 }
             }
             Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
@@ -90,7 +101,7 @@ fn main() -> Result<(), DoubleTapError> {
 
     info!("DoubleTap-RL shutting down...");
 
-    // Note: listener thread will be terminated when main exits
+    // Note: listener and focus threads will be terminated when main exits
     // In a more robust implementation, we'd have a proper shutdown mechanism
 
     Ok(())
