@@ -2,10 +2,12 @@
 //!
 //! This program automatically sends a second right-click after detecting
 //! the user's right-click, helping with double-tap aerial mechanics.
+//! It also records WASD+Shift key inputs during the blocking period and
+//! replays them after the auto-click completes.
 
 use doubletap_rl::{
     create_focus_detector,
-    input_listener::{create_event_channel, mark_auto_click_sent, InputListener},
+    input_listener::{create_event_channel, get_recording, mark_auto_click_sent, stop_blocking_keys, InputListener},
     start_focus_poller, DoubleTapError, FocusState, InputSimulator,
 };
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -26,6 +28,7 @@ fn main() -> Result<(), DoubleTapError> {
 
     info!("DoubleTap-RL starting...");
     info!("Target window: '{}'", TARGET_WINDOW);
+    info!("Recording WASD + Shift keys during auto-click");
 
     // Set up Ctrl+C handler for graceful shutdown
     let running = Arc::new(AtomicBool::new(true));
@@ -59,8 +62,8 @@ fn main() -> Result<(), DoubleTapError> {
     // Create channel for input events
     let (sender, receiver) = create_event_channel();
 
-    // Start input listener in background thread
-    let listener = InputListener::new(sender);
+    // Start input listener in background thread (with focus state for conditional blocking)
+    let listener = InputListener::new(sender, focus_state.clone());
     let _listener_handle = listener.start();
 
     info!("Input listener ready - listening for right-clicks");
@@ -78,14 +81,27 @@ fn main() -> Result<(), DoubleTapError> {
                     // Send the auto-click
                     if let Err(e) = simulator.send_right_click() {
                         error!("Failed to send auto-click: {}", e);
+                        // Stop blocking and discard recording on failure
+                        stop_blocking_keys();
                     } else {
-                        // Mark that we sent an auto-click (to ignore the ydotool-generated event)
+                        // IMPORTANT: Get recorded events BEFORE marking auto-click
+                        // (mark_auto_click_sent allows new right-clicks which could clear buffer)
+                        let recorded = get_recording();
+                        
+                        // Now mark that we sent an auto-click
                         mark_auto_click_sent();
                         let elapsed = event.timestamp.elapsed();
                         info!("Auto-click sent (latency: {:?})", elapsed);
+                        
+                        // Replay recorded key events
+                        if !recorded.is_empty() {
+                            simulator.replay_recorded_keys(recorded);
+                        }
                     }
                 } else {
                     info!("Right-click detected, but target not focused - ignoring");
+                    // Stop blocking and discard recording since we're not sending auto-click
+                    stop_blocking_keys();
                 }
             }
             Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
@@ -105,3 +121,4 @@ fn main() -> Result<(), DoubleTapError> {
 
     Ok(())
 }
+
