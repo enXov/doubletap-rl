@@ -1,0 +1,29 @@
+[package]
+name = "doubletap-rl"
+version = "0.1.0"
+edition = "2021"
+description = "Auto-clicker for Rocket League double-tap aerials"
+license = "MIT"
+repository = "https://github.com/enXov/doubletap-rl"
+keywords = ["rocket-league", "auto-clicker", "linux", "gaming"]
+categories = ["games"]
+
+[dependencies]
+# Input listening (global mouse events via evdev)
+rdev = "0.5"
+
+# Input simulation (uinput-based, works on X11 and Wayland)
+mouse-keyboard-input = "0.3"
+
+# Error handling
+thiserror = "2"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# Async runtime for channels
+tokio = { version = "1", features = ["rt-multi-thread", "sync", "macros"] }
+
+# D-Bus for KDE Wayland focus detection
+zbus = "5"
