@@ -6,12 +6,15 @@
 use doubletap_rl::{
     create_focus_detector,
     input_listener::{create_event_channel, InputListener},
-    start_focus_poller, Config, DoubleTapError, FocusState, InputSimulator,
+    start_focus_poller, DoubleTapError, FocusState, InputSimulator,
 };
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tracing::{error, info, warn, Level};
 use tracing_subscriber::FmtSubscriber;
+
+/// Target window name - hardcoded for Rocket League
+const TARGET_WINDOW: &str = "Rocket League (64-bit, DX11, Cooked)";
 
 fn main() -> Result<(), DoubleTapError> {
     // Initialize logging
@@ -22,13 +25,7 @@ fn main() -> Result<(), DoubleTapError> {
         .init();
 
     info!("DoubleTap-RL starting...");
-
-    // Load configuration
-    let config = Config::default();
-    info!(
-        "Config: delay={}ms, target='{}'",
-        config.click_delay_ms, config.target_window
-    );
+    info!("Target window: '{}'", TARGET_WINDOW);
 
     // Set up Ctrl+C handler for graceful shutdown
     let running = Arc::new(AtomicBool::new(true));
@@ -55,7 +52,7 @@ fn main() -> Result<(), DoubleTapError> {
     info!("Input simulator ready");
 
     // Create focus detector
-    let focus_detector = create_focus_detector(&config.target_window)?;
+    let focus_detector = create_focus_detector(TARGET_WINDOW)?;
     let focus_state = Arc::new(FocusState::new());
     let _focus_handle = start_focus_poller(focus_detector, focus_state.clone(), running.clone());
 
@@ -79,7 +76,7 @@ fn main() -> Result<(), DoubleTapError> {
                     info!("Right-click detected! Target focused - sending auto-click...");
 
                     // Send the auto-click
-                    if let Err(e) = simulator.send_right_click(config.click_delay_ms) {
+                    if let Err(e) = simulator.send_right_click() {
                         error!("Failed to send auto-click: {}", e);
                     } else {
                         let elapsed = event.timestamp.elapsed();

@@ -126,7 +126,7 @@ impl X11FocusDetector {
 impl FocusDetector for X11FocusDetector {
     fn is_target_focused(&self) -> bool {
         if let Some(title) = self.get_active_window_title() {
-            title.contains(&self.target_name)
+            title == self.target_name
         } else {
             false
         }

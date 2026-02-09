@@ -1,8 +1,6 @@
 //! Input simulation using mouse-keyboard-input (uinput)
 
 use mouse_keyboard_input::VirtualDevice;
-use std::thread;
-use std::time::Duration;
 use tracing::{debug, info};
 
 use crate::DoubleTapError;
@@ -31,14 +29,7 @@ impl InputSimulator {
     }
 
     /// Send a right-click event (press and release)
-    ///
-    /// Optionally waits for the specified delay before sending.
-    pub fn send_right_click(&mut self, delay_ms: u64) -> Result<(), DoubleTapError> {
-        if delay_ms > 0 {
-            debug!("Waiting {}ms before sending click", delay_ms);
-            thread::sleep(Duration::from_millis(delay_ms));
-        }
-
+    pub fn send_right_click(&mut self) -> Result<(), DoubleTapError> {
         debug!("Sending right-click press");
         self.device
             .click(BTN_RIGHT)

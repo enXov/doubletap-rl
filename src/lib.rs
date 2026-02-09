@@ -4,14 +4,11 @@
 //! - Global input listening (right-click detection)
 //! - Input simulation (sending synthetic clicks)
 //! - Focus detection (window/process-based)
-//! - Configuration management
 
-pub mod config;
 pub mod focus_detector;
 pub mod input_listener;
 pub mod input_simulator;
 
-pub use config::Config;
 pub use focus_detector::{create_focus_detector, FocusDetector, FocusState, start_focus_poller};
 pub use input_listener::InputListener;
 pub use input_simulator::InputSimulator;
