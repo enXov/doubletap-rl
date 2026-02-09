@@ -5,7 +5,7 @@
 
 use doubletap_rl::{
     create_focus_detector,
-    input_listener::{create_event_channel, InputListener},
+    input_listener::{create_event_channel, mark_auto_click_sent, InputListener},
     start_focus_poller, DoubleTapError, FocusState, InputSimulator,
 };
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -74,11 +74,13 @@ fn main() -> Result<(), DoubleTapError> {
                 // Check if target window is focused
                 if focus_state.is_focused() {
                     info!("Right-click detected! Target focused - sending auto-click...");
-
+                    
                     // Send the auto-click
                     if let Err(e) = simulator.send_right_click() {
                         error!("Failed to send auto-click: {}", e);
                     } else {
+                        // Mark that we sent an auto-click (to ignore the ydotool-generated event)
+                        mark_auto_click_sent();
                         let elapsed = event.timestamp.elapsed();
                         info!("Auto-click sent (latency: {:?})", elapsed);
                     }
