@@ -34,7 +34,7 @@ sudo usermod -aG input $USER
 
 # Clone and build
 git clone https://github.com/enXov/doubletap-rl.git
-cd doubletap-rl/doubletap-rl
+cd doubletap-rl
 cargo build --release
 
 # Run
